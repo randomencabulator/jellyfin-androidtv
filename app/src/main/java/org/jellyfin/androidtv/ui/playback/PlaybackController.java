@@ -184,6 +184,16 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         }
     }
 
+    public long getSubtitleOffsetMs() {
+        return hasInitializedVideoManager() ? mVideoManager.getSubtitleOffsetMs() : 0;
+    }
+
+    public void setSubtitleOffsetMs(long offsetMs) {
+        if (hasInitializedVideoManager()) {
+            mVideoManager.setSubtitleOffsetMs(offsetMs);
+        }
+    }
+
     public BaseItemDto getCurrentlyPlayingItem() {
         return mItems.size() > mCurrentIndex ? mItems.get(mCurrentIndex) : null;
     }

@@ -51,6 +51,10 @@ fun PlaybackController.disableDefaultSubtitles() {
 	}
 }
 
+// The offset can only be applied to subtitles rendered by the client
+val PlaybackController.canAdjustSubtitleOffset: Boolean
+	get() = subtitleStreamIndex != -1 && !burningSubs
+
 @OptIn(UnstableApi::class)
 @JvmOverloads
 fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {

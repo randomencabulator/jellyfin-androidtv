@@ -60,7 +60,9 @@ import org.koin.java.KoinJavaComponent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import io.github.peerless2012.ass.media.AssHandler;
 import io.github.peerless2012.ass.media.AssHandlerConfig;
@@ -85,6 +87,9 @@ public class VideoManager {
     private Handler mHandler = new Handler();
 
     private long mMetaDuration = -1;
+    private final SubtitleOffset subtitleOffset = new SubtitleOffset();
+    @Nullable
+    private UUID subtitleOffsetItemId = null;
     private long lastExoPlayerPosition = -1;
     private boolean nightModeEnabled;
 
@@ -243,9 +248,10 @@ public class VideoManager {
             DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory, assExtractorsFactory);
             mediaSourceFactory.setSubtitleParserFactory(assSubtitleParserFactory);
             exoPlayerBuilder.setMediaSourceFactory(mediaSourceFactory);
-            exoPlayerBuilder.setRenderersFactory(new AssRenderersFactory(assHandler, defaultRendererFactory));
+            AssRenderersFactory assRenderersFactory = new AssRenderersFactory(assHandler, defaultRendererFactory);
+            exoPlayerBuilder.setRenderersFactory(new SubtitleOffsetRenderersFactory(assRenderersFactory, subtitleOffset));
         } else {
-            exoPlayerBuilder.setRenderersFactory(defaultRendererFactory);
+            exoPlayerBuilder.setRenderersFactory(new SubtitleOffsetRenderersFactory(defaultRendererFactory, subtitleOffset));
             exoPlayerBuilder.setMediaSourceFactory(new DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory));
         }
 
@@ -393,6 +399,12 @@ public class VideoManager {
             return;
         }
         Timber.i("Video path set to: %s", path);
+
+        // Keep the subtitle offset when the stream is restarted for the same item
+        if (!Objects.equals(subtitleOffsetItemId, streamInfo.getItemId())) {
+            subtitleOffsetItemId = streamInfo.getItemId();
+            subtitleOffset.setOffsetMs(0);
+        }
 
         try {
             // Add external subtitles
@@ -588,6 +600,15 @@ public class VideoManager {
         } else {
             return mExoPlayer.getPlaybackParameters().speed;
         }
+    }
+
+    public long getSubtitleOffsetMs() {
+        return subtitleOffset.getOffsetMs();
+    }
+
+    public void setSubtitleOffsetMs(long offsetMs) {
+        Timber.d("Setting subtitle offset: %d ms", offsetMs);
+        subtitleOffset.setOffsetMs(offsetMs);
     }
 
     public void setPlaybackSpeed(float speed) {
